@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    hostname: rabbitmq
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      # - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbitmq_feature_flags '[quorum_queues]'
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - CELERY_BROKER_URL=pyamqp://guest:guest@rabbitmq//
+
+  app:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - '8000:8000'
+    depends_on:
+      worker:
+        condition: service_started
+    environment:
+      - CELERY_BROKER_URL=pyamqp://guest:guest@rabbitmq//
+      - CELERY_RESULT_BACKEND=rpc://

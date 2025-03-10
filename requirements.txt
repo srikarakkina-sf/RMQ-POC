@@ -1,0 +1,6 @@
+# celery===5.2.7
+# kombu==5.2.4
+celery
+kombu
+fastapi==0.78.0
+uvicorn==0.17.6
